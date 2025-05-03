@@ -10,17 +10,15 @@ const Chat = () => {
     { sender: 'ai', text: 'Hi there! Need help with your pet today? 🐶' },
   ]);
 
-  // one session id per page-load
+  // one session per mount
   const sessionIdRef = useRef(`${Date.now()}-${Math.floor(Math.random() * 1e5)}`);
   const patientId = sessionStorage.getItem('userName') || '';
 
+  // text chat
   const handleSend = async () => {
     const question = input.trim();
     if (!question) return;
-
-    // add user message locally
-    const userMessage = { sender: 'user', text: question };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, { sender: 'user', text: question }]);
     setInput('');
 
     try {
@@ -33,23 +31,59 @@ const Chat = () => {
           question,
         }),
       });
-
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
-      // append AI reply
-      setMessages(prev => [
-        ...prev,
-        { sender: 'ai', text: data.reply },
-      ]);
+      setMessages(prev => [...prev, { sender: 'ai', text: data.reply }]);
     } catch (err) {
       console.error('Chat error:', err);
-      Toast.show({
-        icon: 'fail',
-        content: err.message || 'Error getting reply',
-      });
+      Toast.show({ icon: 'fail', content: err.message || 'Error getting reply' });
+    }
+  };
+
+  // image upload
+  const fileInputRef = useRef(null);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = ''; // reset input
+
+    // show loading
+    Toast.show({ icon: 'loading', content: 'Analyzing image...' });
+    // add user message
+    setMessages(prev => [
+      ...prev,
+      { sender: 'user', text: `📷 Uploaded image: ${file.name}` },
+    ]);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(
+        `http://127.0.0.1:8000/injury/predict?patient_id=${encodeURIComponent(patientId)}`,
+        { method: 'POST', body: formData }
+      );
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = await res.json();
+
+      // add AI message
+      setMessages(prev => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: `🩹 Injury: ${data.injury}
+Severity: ${data.severity}
+Confidence: ${data.confidence}
+${data.description}`,
+        },
+      ]);
+    } catch (err) {
+      console.error('Image upload error:', err);
+      Toast.show({ icon: 'fail', content: err.message || 'Image analysis failed' });
     }
   };
 
@@ -58,29 +92,37 @@ const Chat = () => {
       <div className="chat-container">
         {/* Chat messages */}
         <div className="chat-messages">
-          {messages.map((msg, index) => (
-            <div key={index} className={`chat-bubble ${msg.sender}`}>
+          {messages.map((msg, i) => (
+            <div key={i} className={`chat-bubble ${msg.sender}`}>
               {msg.text}
             </div>
           ))}
         </div>
 
-        {/* Input area (fixed above footer) */}
+        {/* Input & controls */}
         <div className="chat-input-fixed">
           <div className="chat-input-area">
             <button
               className="plain-icon-button"
               onClick={() => Toast.show({ content: 'Voice input coming soon' })}
             >
-              <AudioOutline style={{ fontSize: 18, color: '#000' }} />
+              <AudioOutline style={{ fontSize: 18 }} />
             </button>
 
             <button
               className="plain-icon-button"
-              onClick={() => Toast.show({ content: 'Upload image coming soon' })}
+              onClick={handleImageClick}
             >
-              <PictureOutline style={{ fontSize: 18, color: '#000' }} />
+              <PictureOutline style={{ fontSize: 18 }} />
             </button>
+            {/* hidden file input */}
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
 
             <Input
               placeholder="Type your message..."
