@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def generate_updated_todo(transcribed_text, past_todo):
     prompt = f"""You are a helpful AI assistant that updates veterinary medical to-do lists.
