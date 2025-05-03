@@ -125,10 +125,10 @@ ${data.description}`;
   const socketRef = useRef(null); // Add this at the top with other useRefs
 
   const startBookingAgent = async () => {
-    const date = prompt("Enter appointment date (e.g., 2025-05-04):");
-    const time = prompt("Enter preferred time (e.g., 3 PM):");
-    const reason = prompt("Enter reason for appointment:");
-    if (!date || !time || !reason) {
+    const hospital = prompt("Enter hospital name:");
+    const department = prompt("Enter department:");
+    const doctor = prompt("Enter doctor name:");
+    if (!hospital || !department || !doctor) {
       Toast.show({ icon: 'fail', content: 'All fields required.' });
       return;
     }
@@ -137,7 +137,7 @@ ${data.description}`;
     socketRef.current = socket;
   
     socket.onopen = () => {
-      socket.send(JSON.stringify({ date, time, reason }));
+      socket.send(JSON.stringify({ hospital, department, doctor }));
     };
   
     socket.onmessage = async (event) => {
@@ -146,7 +146,7 @@ ${data.description}`;
   
       const utterance = new SpeechSynthesisUtterance(msg);
       utterance.onend = () => {
-        if (msg.includes("appointment confirmed")) {
+        if (msg.includes("bye")) {
           Toast.show({ icon: 'success', content: '✅ Appointment call ended' });
           socket.close();
           return;
