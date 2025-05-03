@@ -1,0 +1,83 @@
+import React, { useState } from 'react';
+import { Input, Toast } from 'antd-mobile';
+import { AudioOutline, PictureOutline } from 'antd-mobile-icons';
+import MobileWrapper from '../components/MobileWrapper';
+import '../index.css';
+
+const Chat = () => {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([
+    { sender: 'ai', text: 'Hi there! Need help with your pet today? 🐶' },
+  ]);
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+    const userMessage = { sender: 'user', text: input.trim() };
+    setMessages((prev) => [...prev, userMessage]);
+
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: `Got it! Let me check on "${input.trim()}" 🧐` },
+      ]);
+    }, 600);
+    setInput('');
+  };
+
+  return (
+    <MobileWrapper active="chat">
+      <div className="chat-container">
+        {/* Chat messages */}
+        <div className="chat-messages">
+          {messages.map((msg, index) => (
+            <div key={index} className={`chat-bubble ${msg.sender}`}>
+              {msg.text}
+            </div>
+          ))}
+        </div>
+
+        {/* Input area (fixed above footer) */}
+        <div className="chat-input-fixed">
+          <div className="chat-input-area">
+            <button
+              className="plain-icon-button"
+              onClick={() => Toast.show({ content: 'Voice input coming soon' })}
+            >
+              <AudioOutline style={{ fontSize: 18, color: '#000' }} />
+            </button>
+
+            <button
+              className="plain-icon-button"
+              onClick={() => Toast.show({ content: 'Upload image coming soon' })}
+            >
+              <PictureOutline style={{ fontSize: 18, color: '#000' }} />
+            </button>
+
+            <Input
+              placeholder="Type your message..."
+              className="chat-input"
+              value={input}
+              onChange={(val) => setInput(val)}
+              onEnterPress={handleSend}
+              clearable
+            />
+
+            <button className="chat-icon-button black" onClick={handleSend}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="#000"
+              >
+                <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </MobileWrapper>
+  );
+};
+
+export default Chat;
