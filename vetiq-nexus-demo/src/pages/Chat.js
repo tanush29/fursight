@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Input, Toast } from 'antd-mobile';
 import { AudioOutline, PictureOutline } from 'antd-mobile-icons';
 import MobileWrapper from '../components/MobileWrapper';
@@ -9,18 +9,44 @@ const Chat = () => {
   const [messages, setMessages] = useState([
     { sender: 'ai', text: 'Hi there! Need help with your pet today? 🐶' },
   ]);
+  const [listening, setListening] = useState(false);
 
-  // one session per mount
   const sessionIdRef = useRef(`${Date.now()}-${Math.floor(Math.random() * 1e5)}`);
   const patientId = sessionStorage.getItem('userName') || '';
+  const recognitionRef = useRef(null);
 
-  // text chat
-  const handleSend = async () => {
-    const question = input.trim();
-    if (!question) return;
+  // Initialize SpeechRecognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recog = new SpeechRecognition();
+      recog.lang = 'en-US';
+      recog.interimResults = false;
+      recog.maxAlternatives = 1;
+      recog.onstart = () => setListening(true);
+      recog.onend = () => setListening(false);
+      recog.onerror = (err) => {
+        console.error('Recognition error:', err);
+        Toast.show({ icon: 'fail', content: 'Voice recognition error' });
+        setListening(false);
+      };
+      recog.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        handleChat(transcript, /* speakResponse= */ true);
+      };
+      recognitionRef.current = recog;
+    }
+  }, []);
+
+  const speak = (text) => {
+    if (!window.speechSynthesis) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utter);
+  };
+
+  // Unified chat handler; speakResponse controls voice output
+  const handleChat = async (question, speakResponse) => {
     setMessages(prev => [...prev, { sender: 'user', text: question }]);
-    setInput('');
-
     try {
       const res = await fetch('http://127.0.0.1:8000/chat', {
         method: 'POST',
@@ -34,13 +60,29 @@ const Chat = () => {
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
       setMessages(prev => [...prev, { sender: 'ai', text: data.reply }]);
+      if (speakResponse) speak(data.reply);
     } catch (err) {
       console.error('Chat error:', err);
       Toast.show({ icon: 'fail', content: err.message || 'Error getting reply' });
     }
   };
 
-  // image upload
+  const handleSend = () => {
+    const question = input.trim();
+    if (!question) return;
+    setInput('');
+    // Text input should not trigger speech synthesis:
+    handleChat(question, /* speakResponse= */ false);
+  };
+
+  const handleVoiceClick = () => {
+    if (!recognitionRef.current) {
+      Toast.show({ icon: 'fail', content: 'Voice not supported' });
+      return;
+    }
+    listening ? recognitionRef.current.stop() : recognitionRef.current.start();
+  };
+
   const fileInputRef = useRef(null);
 
   const handleImageClick = () => {
@@ -50,11 +92,9 @@ const Chat = () => {
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = ''; // reset input
+    e.target.value = '';
 
-    // show loading
     Toast.show({ icon: 'loading', content: 'Analyzing image...' });
-    // add user message
     setMessages(prev => [
       ...prev,
       { sender: 'user', text: `📷 Uploaded image: ${file.name}` },
@@ -69,18 +109,13 @@ const Chat = () => {
       );
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
-
-      // add AI message
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: 'ai',
-          text: `🩹 Injury: ${data.injury}
+      const reply = `🩹 Injury: ${data.injury}
 Severity: ${data.severity}
 Confidence: ${data.confidence}
-${data.description}`,
-        },
-      ]);
+${data.description}`;
+      setMessages(prev => [...prev, { sender: 'ai', text: reply }]);
+      // Speak injury analysis:
+      speak(reply);
     } catch (err) {
       console.error('Image upload error:', err);
       Toast.show({ icon: 'fail', content: err.message || 'Image analysis failed' });
@@ -104,9 +139,9 @@ ${data.description}`,
           <div className="chat-input-area">
             <button
               className="plain-icon-button"
-              onClick={() => Toast.show({ content: 'Voice input coming soon' })}
+              onClick={handleVoiceClick}
             >
-              <AudioOutline style={{ fontSize: 18 }} />
+              <AudioOutline style={{ fontSize: 18, color: listening ? '#1677ff' : '#000' }} />
             </button>
 
             <button

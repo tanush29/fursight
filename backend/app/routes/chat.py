@@ -4,6 +4,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Optional
 import os
+import smtplib
+from email.message import EmailMessage
 
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -13,6 +15,11 @@ from weaviate.auth import AuthApiKey
 
 # Load environment variables
 load_dotenv(override=True)
+
+# Gmail credentials
+GMAIL_USER = os.getenv("GMAIL_USER")
+GMAIL_PASSWORD = os.getenv("GMAIL_PASSWORD")
+DOCTOR_EMAIL = "tanush29@gmail.com"
 
 # Initialize OpenAI client (v1.x SDK)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -50,8 +57,30 @@ def is_critical(text: str) -> bool:
     return any(word in lower for word in CRITICAL_KEYWORDS)
 
 def notify_doctor(session_id: str, question: str):
-    # Hook into your actual notification system here
-    print(f"[Notify Doctor] session={session_id} question={question}")
+    """
+    Sends an email notification to the doctor via Gmail SMTP.
+    """
+    if not GMAIL_USER or not GMAIL_PASSWORD:
+        print("[Notify Doctor] Missing Gmail credentials, cannot send email.")
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = f"URGENT: Veterinary alert (session {session_id})"
+    msg["From"] = GMAIL_USER
+    msg["To"] = DOCTOR_EMAIL
+    msg.set_content(
+        f"You have a critical veterinary alert from patient session {session_id}:\n\n"
+        f"{question}\n\n"
+        "Please attend to this immediately."
+    )
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(GMAIL_USER, GMAIL_PASSWORD)
+            smtp.send_message(msg)
+        print(f"[Notify Doctor] Email sent to {DOCTOR_EMAIL} for session {session_id}")
+    except Exception as e:
+        print(f"[Notify Doctor] Failed to send email: {e}")
 
 def fetch_context(patient_id: str, question: str, limit: int = 5) -> str:
     coll = weaviate_client.collections.get("MedicalNote")
@@ -104,7 +133,7 @@ def is_affirmative(reply: str) -> bool:
             messages=[{"role":"user","content":prompt}],
             temperature=0
         )
-    except Exception as e:
+    except Exception:
         # Fallback: treat anything containing 'y' as yes
         return "y" in reply.lower()
     ans = resp.choices[0].message.content.strip().lower()
@@ -118,16 +147,12 @@ def chat(req: ChatRequest):
     # --- Step 1: If we previously asked "notify your doctor?", interpret yes/no ---
     state = session_state.get(sid)
     if state and state.get("asked_notify"):
-        # We asked the critical follow-up; now classify the reply
         if is_affirmative(user_q):
             notify_doctor(sid, state["original_question"])
-            # Clear session state
             session_state.pop(sid, None)
             return {"reply": "Alright, your doctor has been notified.", "critical": False}
         else:
-            # User said no → answer their ORIGINAL question via GPT
             orig_q = state["original_question"]
-            # Clear state before answering
             session_state.pop(sid, None)
             ctx = fetch_context(req.patient_id, orig_q)
             answer = call_gpt(ctx, orig_q)
@@ -135,7 +160,6 @@ def chat(req: ChatRequest):
 
     # --- Step 2: Detect a new critical question ---
     if is_critical(user_q):
-        # Store state so next call is treated as yes/no follow-up
         session_state[sid] = {
             "asked_notify": True,
             "original_question": user_q
