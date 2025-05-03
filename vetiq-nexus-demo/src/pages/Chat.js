@@ -122,6 +122,67 @@ ${data.description}`;
     }
   };
 
+  const socketRef = useRef(null); // Add this at the top with other useRefs
+
+  const startBookingAgent = async () => {
+    const date = prompt("Enter appointment date (e.g., 2025-05-04):");
+    const time = prompt("Enter preferred time (e.g., 3 PM):");
+    const reason = prompt("Enter reason for appointment:");
+    if (!date || !time || !reason) {
+      Toast.show({ icon: 'fail', content: 'All fields required.' });
+      return;
+    }
+  
+    const socket = new WebSocket("ws://127.0.0.1:8000/ws/booking-agent");
+    socketRef.current = socket;
+  
+    socket.onopen = () => {
+      socket.send(JSON.stringify({ date, time, reason }));
+    };
+  
+    socket.onmessage = async (event) => {
+      const msg = event.data;
+      setMessages((prev) => [...prev, { sender: 'ai', text: msg }]);
+  
+      const utterance = new SpeechSynthesisUtterance(msg);
+      utterance.onend = () => {
+        if (msg.includes("appointment confirmed")) {
+          Toast.show({ icon: 'success', content: '✅ Appointment call ended' });
+          socket.close();
+          return;
+        }
+  
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+  
+        recognition.onresult = (e) => {
+          const spoken = e.results[0][0].transcript;
+          setMessages((prev) => [...prev, { sender: 'user', text: spoken }]);
+          if (socketRef.current?.readyState === 1) {
+            socketRef.current.send(spoken);
+          }
+        };
+  
+        recognition.onerror = () => {
+          Toast.show({ icon: 'fail', content: 'Speech recognition error' });
+        };
+  
+        recognition.start();
+      };
+  
+      window.speechSynthesis.speak(utterance);
+    };
+  
+    socket.onclose = () => {
+      console.log("WebSocket closed.");
+    };
+  };
+  
+  
+  
+
   return (
     <MobileWrapper active="chat">
       <div className="chat-container">
@@ -143,6 +204,15 @@ ${data.description}`;
             >
               <AudioOutline style={{ fontSize: 18, color: listening ? '#1677ff' : '#000' }} />
             </button>
+
+            <button
+  className="plain-icon-button"
+  onClick={startBookingAgent}
+  style={{ fontSize: 12, marginLeft: 8, background: '#eee', padding: '4px 8px', borderRadius: 6 }}
+>
+  📞 Book via Agent
+</button>
+
 
             <button
               className="plain-icon-button"

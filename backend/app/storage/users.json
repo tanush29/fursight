@@ -100,5 +100,11 @@
     "name": "ARSWGWRAH",
     "email": "WSRH@gmail.com",
     "password": "ERHEST"
+  },
+  {
+    "role": "patient",
+    "name": "John",
+    "email": "john@gmail.com",
+    "password": "john"
   }
 ]
