@@ -106,5 +106,17 @@
     "name": "John",
     "email": "john@gmail.com",
     "password": "john"
+  },
+  {
+    "role": "doctor",
+    "name": "doc1",
+    "email": "docemail1@gmail.com",
+    "password": "abc"
+  },
+  {
+    "role": "patient",
+    "name": "bella",
+    "email": "bella@gmail.com",
+    "password": "bella"
   }
 ]
