@@ -1,0 +1,12 @@
+// src/pages/TestInput.js
+import React from 'react';
+
+const TestInput = () => {
+  return (
+    <div style={{ fontSize: '24px', color: 'black' }}>
+      ✅ Hello from TestInput
+    </div>
+  );
+};
+
+export default TestInput;
