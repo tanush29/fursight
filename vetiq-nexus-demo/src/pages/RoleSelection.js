@@ -7,7 +7,7 @@ const RoleSelection = () => {
   const navigate = useNavigate();
 
   return (
-    <MobileWrapper>
+    <MobileWrapper hideFooter>
       <div style={styles.container}>
         <img
           src="https://cdn-icons-png.flaticon.com/512/616/616408.png"

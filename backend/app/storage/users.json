@@ -16,5 +16,41 @@
     "name": "string",
     "email": "user@example.com",
     "password": "string"
+  },
+  {
+    "role": "doctor",
+    "name": "striregng",
+    "email": "usreger@example.com",
+    "password": "stehring"
+  },
+  {
+    "role": "doctor",
+    "name": "ragahte",
+    "email": "edtzh@gmail.com",
+    "password": "shezadh"
+  },
+  {
+    "role": "doctor",
+    "name": "Dr",
+    "email": "dr@gmail.com",
+    "password": "sdhbsg"
+  },
+  {
+    "role": "doctor",
+    "name": "agh",
+    "email": "earhre@gmail.com",
+    "password": "earhaeh"
+  },
+  {
+    "role": "patient",
+    "name": "ts",
+    "email": "ts@ts.com",
+    "password": "abc"
+  },
+  {
+    "role": "doctor",
+    "name": "Dcotro abc",
+    "email": "swag@gmail.com",
+    "password": "rsfhsteh"
   }
 ]

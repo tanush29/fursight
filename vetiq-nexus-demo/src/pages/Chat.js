@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Input, Toast } from 'antd-mobile';
 import { AudioOutline, PictureOutline } from 'antd-mobile-icons';
 import MobileWrapper from '../components/MobileWrapper';
@@ -10,18 +10,47 @@ const Chat = () => {
     { sender: 'ai', text: 'Hi there! Need help with your pet today? 🐶' },
   ]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const userMessage = { sender: 'user', text: input.trim() };
-    setMessages((prev) => [...prev, userMessage]);
+  // one session id per page-load
+  const sessionIdRef = useRef(`${Date.now()}-${Math.floor(Math.random() * 1e5)}`);
+  const patientId = sessionStorage.getItem('userName') || '';
 
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { sender: 'ai', text: `Got it! Let me check on "${input.trim()}" 🧐` },
-      ]);
-    }, 600);
+  const handleSend = async () => {
+    const question = input.trim();
+    if (!question) return;
+
+    // add user message locally
+    const userMessage = { sender: 'user', text: question };
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
+
+    try {
+      const res = await fetch('http://127.0.0.1:8000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionIdRef.current,
+          patient_id: patientId,
+          question,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      // append AI reply
+      setMessages(prev => [
+        ...prev,
+        { sender: 'ai', text: data.reply },
+      ]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      Toast.show({
+        icon: 'fail',
+        content: err.message || 'Error getting reply',
+      });
+    }
   };
 
   return (
@@ -57,7 +86,7 @@ const Chat = () => {
               placeholder="Type your message..."
               className="chat-input"
               value={input}
-              onChange={(val) => setInput(val)}
+              onChange={setInput}
               onEnterPress={handleSend}
               clearable
             />

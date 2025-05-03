@@ -8,46 +8,77 @@ const Login = () => {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
 
-  const onChange = (field, val) => setFormData({ ...formData, [field]: val });
+  const onChange = (field, val) =>
+    setFormData({ ...formData, [field]: val });
 
   const handleLogin = async () => {
     const { email, password } = formData;
-
     if (!email || !password) {
       Toast.show({ icon: 'fail', content: 'Please fill all fields' });
       return;
     }
 
-    // TEMP: Skip backend for now
-    Toast.show({ icon: 'success', content: 'Login successful!' });
-    setTimeout(() => navigate('/dashboard'), 1000);
+    setLoading(true);
+    Toast.show({ icon: 'loading', content: 'Logging in...' });
 
-    // When backend is ready, use this instead:
-    /*
     try {
-      const res = await fetch('http://localhost:3001/login', {
+      const res = await fetch('http://127.0.0.1:8000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
+      if (!res.ok) {
+        let errorMessage = `Server returned ${res.status}`;
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const errorData = await res.json().catch(() => null);
+          if (errorData) {
+            if (Array.isArray(errorData.detail)) {
+              errorMessage = errorData.detail.map(err => err.msg).join(', ');
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            }
+          }
+        } else {
+          const text = await res.text().catch(() => null);
+          if (text) errorMessage = text;
+        }
+        throw new Error(errorMessage);
+      }
+
       const data = await res.json();
 
-      if (data.success) {
+      if (data.success && data.user) {
+        // 1) store userId if it exists
+        if (data.user.id) {
+          sessionStorage.setItem('userId', data.user.id);
+        }
+        // 2) store userName (guaranteed to exist)
+        sessionStorage.setItem('userName', data.user.name);
+
         Toast.show({ icon: 'success', content: 'Login successful!' });
-        setTimeout(() => navigate('/dashboard'), 1500);
+        setTimeout(() => navigate('/dashboard'), 500);
       } else {
         Toast.show({ icon: 'fail', content: data.message || 'Login failed' });
       }
     } catch (err) {
-      Toast.show({ icon: 'fail', content: 'Server error' });
+      console.error('Login error:', err);
+      Toast.show({
+        icon: 'fail',
+        content: err.message?.includes('NetworkError')
+          ? 'Network error – please check your connection'
+          : err.message || 'Unexpected error',
+      });
+    } finally {
+      setLoading(false);
     }
-    */
   };
 
   return (
-    <MobileWrapper>
+    <MobileWrapper hideFooter>
       <div style={{ padding: 24, textAlign: 'center', width: '100%' }}>
         <img
           src="https://cdn-icons-png.flaticon.com/512/616/616408.png"
@@ -88,8 +119,9 @@ const Login = () => {
           size="large"
           style={{ marginTop: 20 }}
           onClick={handleLogin}
+          disabled={loading}
         >
-          Login
+          {loading ? 'Logging in…' : 'Login'}
         </Button>
         <Button
           block

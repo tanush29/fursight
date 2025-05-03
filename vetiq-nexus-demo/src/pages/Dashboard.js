@@ -3,36 +3,23 @@ import { CalendarOutline, CheckOutline } from 'antd-mobile-icons';
 import MobileWrapper from '../components/MobileWrapper';
 import '../index.css';
 
+const defaultTodos = [
+  { text: 'Give Bella antibiotics at 9 AM', done: false },
+  { text: 'Schedule annual checkup', done: false },
+  { text: 'Order prescription refill', done: true },
+];
+
 const Dashboard = () => {
   const [view, setView] = useState('upcoming');
-  const [todos, setTodos] = useState([
-    { text: 'Give Bella antibiotics at 9 AM', done: false },
-    { text: 'Schedule annual checkup', done: false },
-    { text: 'Order prescription refill', done: true },
-  ]);
+  const [todos, setTodos] = useState(() => {
+    const stored = sessionStorage.getItem('todos');
+    return stored ? JSON.parse(stored) : defaultTodos;
+  });
 
   const appointments = [
-    {
-      date: '2025-05-04',
-      time: '10:00 AM',
-      vet: 'Dr. Smith',
-      pet: 'Bella',
-      notes: 'Follow-up on ear infection',
-    },
-    {
-      date: '2025-05-01',
-      time: '3:00 PM',
-      vet: 'Dr. Jane',
-      pet: 'Bella',
-      notes: 'Vaccination',
-    },
-    {
-      date: '2025-04-27',
-      time: '1:00 PM',
-      vet: 'Dr. Raj',
-      pet: 'Bella',
-      notes: 'Dental cleaning',
-    },
+    { date: '2025-05-04', time: '10:00 AM', vet: 'Dr. Smith', pet: 'Bella', notes: 'Follow-up on ear infection' },
+    { date: '2025-05-01', time: '3:00 PM',  vet: 'Dr. Jane',  pet: 'Bella', notes: 'Vaccination' },
+    { date: '2025-04-27', time: '1:00 PM',  vet: 'Dr. Raj',   pet: 'Bella', notes: 'Dental cleaning' },
   ];
 
   const toggleTodo = (index) => {
@@ -40,13 +27,13 @@ const Dashboard = () => {
     updated[index].done = !updated[index].done;
     updated.sort((a, b) => a.done - b.done);
     setTodos(updated);
+    sessionStorage.setItem('todos', JSON.stringify(updated));
   };
 
   return (
     <MobileWrapper active="dashboard">
       <div className="dashboard-page">
-
-        {/* Toggle pill buttons inside card */}
+        {/* Toggle */}
         <div className="dashboard-toggle-wrapper">
           <div className="dashboard-toggle-card">
             <button
@@ -64,23 +51,24 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Calendar Appointments */}
+        {/* Appointments */}
         <div className="calendar-section">
-          <h3><CalendarOutline style={{ marginRight: 6 }} />
+          <h3>
+            <CalendarOutline style={{ marginRight: 6 }} />
             {view === 'upcoming' ? 'Upcoming Appointments' : 'Past Appointments'}
           </h3>
           <div className="calendar-block">
             {appointments
-              .filter((appt) =>
+              .filter((a) =>
                 view === 'upcoming'
-                  ? new Date(appt.date) >= new Date()
-                  : new Date(appt.date) < new Date()
+                  ? new Date(a.date) >= new Date()
+                  : new Date(a.date) < new Date()
               )
-              .map((appt, index) => (
-                <div key={index} className="calendar-card">
-                  <strong>{appt.pet}</strong> with {appt.vet} <br />
-                  {appt.date} @ {appt.time}
-                  <div className="calendar-notes">{appt.notes}</div>
+              .map((a, i) => (
+                <div key={i} className="calendar-card">
+                  <strong>{a.pet}</strong> with {a.vet}<br/>
+                  {a.date} @ {a.time}
+                  <div className="calendar-notes">{a.notes}</div>
                 </div>
               ))}
           </div>
@@ -103,7 +91,7 @@ const Dashboard = () => {
           </ul>
         </div>
 
-        {/* Doctors Section */}
+        {/* Doctors */}
         <div className="nearby-doctors">
           <h3>Your Doctors</h3>
           <div className="doctor-card">👩‍⚕️ Dr. Maya – PetCare SF</div>

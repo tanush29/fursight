@@ -1,16 +1,17 @@
+// src/components/MobileWrapper.js
 import React from 'react';
 import TabBarFooter from './TabBarFooter';
 
-const MobileWrapper = ({ children, active }) => {
-  return (
-    <div style={styles.wrapper}>
-      <div style={styles.content}>{children}</div>
+const MobileWrapper = ({ children, active, hideFooter = false }) => (
+  <div style={styles.wrapper}>
+    <div style={styles.content}>{children}</div>
+    { !hideFooter && (
       <div style={styles.footer}>
         <TabBarFooter active={active} />
       </div>
-    </div>
-  );
-};
+    )}
+  </div>
+);
 
 const styles = {
   wrapper: {
@@ -25,7 +26,7 @@ const styles = {
   content: {
     flex: 1,
     overflowY: 'auto',
-    paddingBottom: '60px', // avoid overlap
+    paddingBottom: '60px', // avoid overlap when footer is shown
   },
   footer: {
     position: 'fixed',
