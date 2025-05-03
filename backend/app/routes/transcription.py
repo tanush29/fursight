@@ -12,8 +12,12 @@ from weaviate import connect_to_weaviate_cloud
 from weaviate.auth import AuthApiKey
 import os
 from dotenv import load_dotenv
+from typing import Dict
 
 load_dotenv()  # make sure this runs once in your app startup
+
+# simple in‑memory map; for production you’d persist per user/session
+transcribe_enabled: Dict[str, bool] = {}
 
 weaviate_client = connect_to_weaviate_cloud(
     cluster_url=os.getenv("WEAVIATE_URL"),
@@ -80,5 +84,28 @@ def push_to_weaviate(record: dict):
     uuid = collection.data.insert(obj)
     return uuid
 
-    
+@router.post("/unlock-transcribe")
+def unlock_transcribe():
+    """
+    iOS Shortcut or any client calls this to globally enable recording.
+    """
+    global unlock_transcribe
+    unlock_transcribe = True
+    return {"unlocked": True}
 
+
+@router.get("/is-transcribe-unlocked")
+def is_unlocked():
+    """
+    App polls this to know if recording should be enabled.
+    """
+    return {"unlocked": unlock_transcribe}
+
+@router.post("/lock-transcribe")
+def lock_transcribe():
+    """
+    Call this to reset the lock (disable recording) again.
+    """
+    global unlock_transcribe
+    unlock_transcribe = False
+    return {"unlocked": False}

@@ -1,16 +1,34 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AudioOutline } from 'antd-mobile-icons';
 import { Toast } from 'antd-mobile';
 import MobileWrapper from '../components/MobileWrapper';
 import '../index.css';
 
 const Transcribe = () => {
+  const [unlocked, setUnlocked] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState('');
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const sessionIdRef = useRef(`${Date.now()}-${Math.floor(Math.random() * 1e5)}`);
+
+  // Poll the server until the iPhone Shortcut unlocks transcription
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:8000/is-transcribe-unlocked');
+        const data = await res.json();
+        if (data.unlocked) {
+          setUnlocked(true);
+          clearInterval(interval);
+        }
+      } catch {
+        // ignore errors and keep polling
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const doctor = {
     name: 'Dr. Smith',
@@ -24,15 +42,13 @@ const Transcribe = () => {
   };
 
   const handleRecordingStop = async () => {
-    // assemble audio & stop tracks
     const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
     mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
-
     setIsProcessing(true);
     setTranscription('');
 
     try {
-      // 1️⃣ Transcribe audio
+      // Transcribe audio
       const formData = new FormData();
       formData.append('audio_file', blob, 'recording.webm');
       formData.append('session_id', sessionIdRef.current);
@@ -49,25 +65,20 @@ const Transcribe = () => {
 
       setTranscription(tData.transcription);
 
-      // 2️⃣ Generate new todos via query string params
+      // Generate new todos
       const stored = sessionStorage.getItem('todos');
       const pastList = stored
         ? JSON.parse(stored).map(item => item.text).join(',')
         : '';
-
-      // build URL with encoded params
       const qs = new URLSearchParams({
         patient_id: patient.name,
         past_todo: pastList,
       }).toString();
-
       const genRes = await fetch(
         `http://127.0.0.1:8000/generate-todo?${qs}`,
         { method: 'POST' }
       );
-
       if (!genRes.ok) {
-        // try parsing JSON errors
         const errJson = await genRes.json().catch(() => null);
         let msg = `Generate TODO returned ${genRes.status}`;
         if (errJson) {
@@ -79,19 +90,16 @@ const Transcribe = () => {
         }
         throw new Error(msg);
       }
-
       const genData = await genRes.json();
       if (!genData.success) throw new Error(genData.message || 'Generate TODO failed');
 
-      // parse and store new todos
       const items = genData.updated_todo
         .split(/[\n,]+/)
         .map(s => s.trim())
         .filter(Boolean);
       const newTodos = items.map(text => ({ text, done: false }));
       sessionStorage.setItem('todos', JSON.stringify(newTodos));
-      Toast.show({ icon: 'success', content: 'To-do list updated!' });
-
+      Toast.show({ icon: 'success', content: 'To‑do list updated!' });
     } catch (err) {
       console.error('Error in transcription/todo flow:', err);
       Toast.show({ icon: 'fail', content: err.message || 'Something went wrong' });
@@ -102,6 +110,10 @@ const Transcribe = () => {
   };
 
   const toggleListening = async () => {
+    if (!unlocked) {
+      Toast.show({ icon: 'fail', content: 'Recording locked—run the iPhone shortcut to unlock.' });
+      return;
+    }
     if (!isListening) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -131,7 +143,10 @@ const Transcribe = () => {
         <div style={styles.content}>
           <div style={{ position: 'relative', display: 'inline-block' }}>
             {isListening && (
-              <div className="pulse-circle" style={{ pointerEvents: 'none', zIndex: 1 }} />
+              <div
+                className="pulse-circle"
+                style={{ pointerEvents: 'none', zIndex: 1 }}
+              />
             )}
             <div
               onClick={toggleListening}
@@ -139,7 +154,12 @@ const Transcribe = () => {
                 ...styles.micButton,
                 position: 'relative',
                 zIndex: 2,
-                backgroundColor: isListening ? '#1677ff' : '#ccc',
+                backgroundColor: unlocked
+                  ? isListening
+                    ? '#1677ff'
+                    : '#ccc'
+                  : '#aaa',
+                cursor: unlocked ? 'pointer' : 'not-allowed',
               }}
             >
               <AudioOutline style={{ fontSize: 32, color: 'white' }} />
@@ -147,7 +167,9 @@ const Transcribe = () => {
           </div>
 
           <p style={styles.statusText}>
-            {isListening
+            {!unlocked
+              ? 'Access only near doctor'
+              : isListening
               ? 'Recording…'
               : isProcessing
               ? 'Transcribing…'
@@ -184,14 +206,40 @@ const styles = {
     padding: '20px 16px 0',
   },
   profile: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  avatar: { width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', marginBottom: 4 },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: '50%',
+    objectFit: 'cover',
+    marginBottom: 4,
+  },
   nameBlock: { textAlign: 'center' },
   name: { fontWeight: 'bold', fontSize: 14 },
   sub: { fontSize: 12, color: '#888' },
-  content: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  micButton: { width: 90, height: 90, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  content: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  micButton: {
+    width: 90,
+    height: 90,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  },
   statusText: { color: '#666', fontSize: 16, marginTop: 12 },
-  transcriptionBox: { marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 8, width: '90%' },
+  transcriptionBox: {
+    marginTop: 24,
+    padding: 16,
+    background: '#f5f5f5',
+    borderRadius: 8,
+    width: '90%',
+  },
 };
 
 export default Transcribe;
