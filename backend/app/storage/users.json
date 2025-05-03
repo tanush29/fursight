@@ -52,5 +52,53 @@
     "name": "Dcotro abc",
     "email": "swag@gmail.com",
     "password": "rsfhsteh"
+  },
+  {
+    "role": "doctor",
+    "name": "doctortj",
+    "email": "adsadf@gmail.com",
+    "password": "tdht"
+  },
+  {
+    "role": "patient",
+    "name": "wega",
+    "email": "wgtwrs@gmail.com",
+    "password": "awrgeath"
+  },
+  {
+    "role": "patient",
+    "name": "rszg",
+    "email": "GSeg@gmail.com",
+    "password": "wargaerg"
+  },
+  {
+    "role": "patient",
+    "name": "pete",
+    "email": "egwes@gmail.com",
+    "password": "edhtedzs"
+  },
+  {
+    "role": "patient",
+    "name": "abcdef",
+    "email": "abcdef@gmail.com",
+    "password": "abcdef"
+  },
+  {
+    "role": "doctor",
+    "name": "aeg",
+    "email": "steh@gmail.com",
+    "password": "ethtdj"
+  },
+  {
+    "role": "patient",
+    "name": "qf",
+    "email": "WEGA@gmail.com",
+    "password": "RWAGAHR"
+  },
+  {
+    "role": "patient",
+    "name": "ARSWGWRAH",
+    "email": "WSRH@gmail.com",
+    "password": "ERHEST"
   }
 ]

@@ -15,6 +15,8 @@ const Signup = () => {
     setFormData({ ...formData, [field]: val });
 
   const handleSignup = async () => {
+    sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('userName');
     const { name, email, password } = formData;
     if (!name || !email || !password) {
       Toast.show({ icon: 'fail', content: 'Please fill all fields' });
@@ -56,10 +58,12 @@ const Signup = () => {
       const data = await res.json();
 
       if (data.success) {
+        sessionStorage.removeItem('todos');
         // Save userId in sessionStorage for global access
         if (data.user && data.user.id) {
           sessionStorage.setItem('userId', data.user.id);
         }
+        sessionStorage.setItem('userName', data.user.name);
         Toast.show({ icon: 'success', content: 'Welcome aboard!' });
         setTimeout(() => navigate('/dashboard'), 500);
       } else {

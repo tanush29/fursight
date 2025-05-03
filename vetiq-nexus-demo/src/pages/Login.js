@@ -17,6 +17,8 @@ const Login = () => {
     const { email, password } = formData;
     if (!email || !password) {
       Toast.show({ icon: 'fail', content: 'Please fill all fields' });
+      sessionStorage.removeItem('userId');
+      sessionStorage.removeItem('userName');
       return;
     }
 
@@ -52,6 +54,7 @@ const Login = () => {
       const data = await res.json();
 
       if (data.success && data.user) {
+        sessionStorage.removeItem('todos');
         // 1) store userId if it exists
         if (data.user.id) {
           sessionStorage.setItem('userId', data.user.id);
