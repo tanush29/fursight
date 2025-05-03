@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import auth, transcription, todo, chat, injury
+from app.routes import auth, transcription, todo, chat, injury, chart
 
 app = FastAPI()
 
@@ -18,3 +18,4 @@ app.include_router(transcription.router)
 app.include_router(todo.router)
 app.include_router(chat.router)
 app.include_router(injury.router)
+app.include_router(chart.router)

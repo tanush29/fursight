@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { CalendarOutline, CheckOutline } from 'antd-mobile-icons';
+import { Input, Button, Toast } from 'antd-mobile';
 import MobileWrapper from '../components/MobileWrapper';
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
+  BarChart, Bar,
+  PieChart, Pie, Cell,
+  ResponsiveContainer
+} from 'recharts';
 import '../index.css';
 
 const defaultTodos = [
@@ -16,6 +23,10 @@ const Dashboard = () => {
     return stored ? JSON.parse(stored) : defaultTodos;
   });
 
+  const [query, setQuery] = useState('');
+  const [chartInfo, setChartInfo] = useState(null);
+  const [loadingChart, setLoadingChart] = useState(false);
+
   const appointments = [
     { date: '2025-05-04', time: '10:00 AM', vet: 'Dr. Smith', pet: 'Bella', notes: 'Follow-up on ear infection' },
     { date: '2025-05-01', time: '3:00 PM',  vet: 'Dr. Jane',  pet: 'Bella', notes: 'Vaccination' },
@@ -28,6 +39,88 @@ const Dashboard = () => {
     updated.sort((a, b) => a.done - b.done);
     setTodos(updated);
     sessionStorage.setItem('todos', JSON.stringify(updated));
+  };
+
+  const handleVisualize = async () => {
+    if (!query.trim()) {
+      Toast.show({ icon: 'fail', content: 'Please enter a question.' });
+      return;
+    }
+    setLoadingChart(true);
+    try {
+      const patient_id = sessionStorage.getItem('userName') || '';
+      const res = await fetch('http://127.0.0.1:8000/chart-query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_id, question: query.trim() })
+      });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = await res.json();
+      setChartInfo(data.chart);
+    } catch (err) {
+      console.error(err);
+      Toast.show({ icon: 'fail', content: err.message || 'Visualization failed' });
+    } finally {
+      setLoadingChart(false);
+    }
+  };
+
+  const renderChart = () => {
+    if (!chartInfo) return null;
+    const data = chartInfo.labels.map((label, i) => ({
+      name: label,
+      value: chartInfo.values[i] ?? 0,
+    }));
+    switch (chartInfo.type) {
+      case 'line':
+        return (
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="value" stroke="#1677ff" />
+            </LineChart>
+          </ResponsiveContainer>
+        );
+      case 'bar':
+        return (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" fill="#1677ff" />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      case 'pie':
+        return (
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                fill="#1677ff"
+                label
+              >
+                {data.map((_, index) => (
+                  <Cell key={index} fill={['#1677ff','#888888'][index % 2]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -89,6 +182,33 @@ const Dashboard = () => {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* Visualization Box */}
+        <div className="chart-section" style={{ padding: '16px' }}>
+          <h3>Visualize Data</h3>
+          <Input
+            placeholder="Enter question to visualize"
+            value={query}
+            onChange={setQuery}
+            clearable
+            style={{ marginBottom: 8 }}
+          />
+          <Button
+            block
+            color="primary"
+            size="small"
+            onClick={handleVisualize}
+            loading={loadingChart}
+          >
+            Visualize
+          </Button>
+          {chartInfo && (
+            <div className="chart-box" style={{ marginTop: 16 }}>
+              <h4 style={{ textAlign: 'center' }}>{chartInfo.title}</h4>
+              {renderChart()}
+            </div>
+          )}
         </div>
 
         {/* Doctors */}
