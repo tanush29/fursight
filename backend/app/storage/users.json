@@ -1,0 +1,20 @@
+[
+  {
+    "role": "doctor",
+    "name": "tanush",
+    "email": "tanush29@gmail.com",
+    "password": "abcd"
+  },
+  {
+    "role": "patient",
+    "name": "nidhi",
+    "email": "spoli@gmail.com",
+    "password": "abcd123"
+  },
+  {
+    "role": "string",
+    "name": "string",
+    "email": "user@example.com",
+    "password": "string"
+  }
+]
