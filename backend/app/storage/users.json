@@ -1,0 +1,110 @@
+[
+  {
+    "role": "doctor",
+    "name": "tanush",
+    "email": "tanush29@gmail.com",
+    "password": "abcd"
+  },
+  {
+    "role": "patient",
+    "name": "nidhi",
+    "email": "spoli@gmail.com",
+    "password": "abcd123"
+  },
+  {
+    "role": "string",
+    "name": "string",
+    "email": "user@example.com",
+    "password": "string"
+  },
+  {
+    "role": "doctor",
+    "name": "striregng",
+    "email": "usreger@example.com",
+    "password": "stehring"
+  },
+  {
+    "role": "doctor",
+    "name": "ragahte",
+    "email": "edtzh@gmail.com",
+    "password": "shezadh"
+  },
+  {
+    "role": "doctor",
+    "name": "Dr",
+    "email": "dr@gmail.com",
+    "password": "sdhbsg"
+  },
+  {
+    "role": "doctor",
+    "name": "agh",
+    "email": "earhre@gmail.com",
+    "password": "earhaeh"
+  },
+  {
+    "role": "patient",
+    "name": "ts",
+    "email": "ts@ts.com",
+    "password": "abc"
+  },
+  {
+    "role": "doctor",
+    "name": "Dcotro abc",
+    "email": "swag@gmail.com",
+    "password": "rsfhsteh"
+  },
+  {
+    "role": "doctor",
+    "name": "doctortj",
+    "email": "adsadf@gmail.com",
+    "password": "tdht"
+  },
+  {
+    "role": "patient",
+    "name": "wega",
+    "email": "wgtwrs@gmail.com",
+    "password": "awrgeath"
+  },
+  {
+    "role": "patient",
+    "name": "rszg",
+    "email": "GSeg@gmail.com",
+    "password": "wargaerg"
+  },
+  {
+    "role": "patient",
+    "name": "pete",
+    "email": "egwes@gmail.com",
+    "password": "edhtedzs"
+  },
+  {
+    "role": "patient",
+    "name": "abcdef",
+    "email": "abcdef@gmail.com",
+    "password": "abcdef"
+  },
+  {
+    "role": "doctor",
+    "name": "aeg",
+    "email": "steh@gmail.com",
+    "password": "ethtdj"
+  },
+  {
+    "role": "patient",
+    "name": "qf",
+    "email": "WEGA@gmail.com",
+    "password": "RWAGAHR"
+  },
+  {
+    "role": "patient",
+    "name": "ARSWGWRAH",
+    "email": "WSRH@gmail.com",
+    "password": "ERHEST"
+  },
+  {
+    "role": "patient",
+    "name": "John",
+    "email": "john@gmail.com",
+    "password": "john"
+  }
+]

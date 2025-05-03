@@ -1,0 +1,5 @@
+backend/opt
+backend/venv
+backend/app/__pycache__
+backend/app/routes/__pycache__
+backend/app/services/__pycache__
