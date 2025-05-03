@@ -1,6 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from pydantic import BaseModel, Field
 from app.services.anthropic_client import predict_injury_from_image
+from weaviate import connect_to_weaviate_cloud
+from weaviate.auth import AuthApiKey
+import os
 
 router = APIRouter(prefix="/injury", tags=["injury"])
 
@@ -11,7 +14,10 @@ class InjuryResponse(BaseModel):
     description: str = Field(description="Brief description of the observed injury or explanation of why no injury is detected")
 
 @router.post("/predict", response_model=InjuryResponse)
-async def predict_injury(file: UploadFile = File(...)):
+async def predict_injury(
+    patient_id: str,
+    file: UploadFile = File(...)
+):
     """
     Analyze an uploaded image to detect animal injuries.
     Returns injury type, severity, and confidence score.
@@ -64,6 +70,31 @@ async def predict_injury(file: UploadFile = File(...)):
                 result["description"] = "No visible injuries detected in the image."
             else:
                 result["description"] = f"A {result['severity']} {result['injury']} was detected."
+
+        weaviate_url = os.getenv("WEAVIATE_URL")
+        weaviate_key = os.getenv("WEAVIATE_API_KEY")
+        w_client = connect_to_weaviate_cloud(
+            cluster_url=weaviate_url,
+            auth_credentials=AuthApiKey(weaviate_key),
+            headers={"X-OpenAI-Api-Key": os.getenv("OPENAI_API_KEY")}
+        )
+        # Compose the object exactly as your MedicalNote class expects
+        note_obj = {
+            "patient_id": patient_id,
+            # no doctor_id in this context, or you can add if you have it
+            "doctor_id": None,
+            # store the injury JSON as a single string or individual props
+            "content": (
+                f"Injury: {result['injury']}\n"
+                f"Severity: {result['severity']}\n"
+                f"Confidence: {result['confidence']:.2f}\n"
+                f"Notes: {result['description']}"
+            ),
+            # timestamp will be auto-added by Weaviate, or include here if your schema has it
+        }
+        coll = w_client.collections.get("MedicalNote")
+        coll.data.insert(note_obj)
+        w_client.close()
         
         return result
         
